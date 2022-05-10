@@ -1,70 +1,146 @@
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class BST <K extends Comparable<K>, V> implements Iterable<K>{
-    private static class MyNode<K extends Comparable<K>, V>{
-        K key;
-        V value;
-        MyNode<K, V> left, right;
-        int length = 1;
+    private Node root;
 
-        MyNode(K key, V value) {
+    private class Node{
+        private K key;
+        private V value;
+        private Node left, right;
+
+        public Node(K key, V value) {
             this.key = key;
             this.value = value;
         }
     }
 
-    private MyNode<K, V> root;
-    private int length;
-
     public void put(K key, V value){
-        MyNode<K, V> newNode = new MyNode<>(key, value);
-        root = put(root, newNode);
+        Node newNode = new Node(key, value);
+        newNode.left = null;
+        newNode.right = null;
+        put(newNode);
     }
 
-    private MyNode<K, V> put(MyNode<K, V> current, MyNode<K, V> node) {
-        if (current == null) {
-            return node;
+    private void put(Node newNode) {
+        Node prev = null;
+        Node parent = root;
+
+        while (parent != null) {
+            prev = parent;
+
+            if (newNode.key.compareTo(parent.key) <= 0) {
+                parent = parent.left;
+            } else {
+                parent = parent.right;
+            }
         }
 
-        int cmp = node.key.compareTo(current.key);
-
-        if (cmp > 0) {
-            current.right = put(current.right, node);
-            current.length += current.right.length + 1;
-        } else if (cmp < 0) {
-            current.left = put(current.left, node);
-            current.length += current.left.length + 1;
+        if (prev == null) {
+            root = newNode;
+        } else if (newNode.key.compareTo(prev.key) <= 0) {
+            prev.left = newNode;
         } else {
-            current.value = node.value;
+            prev.right = newNode;
         }
 
-        current.length = size(current.right) + size(current.left) + 1;
-
-        return current;
-    }
-
-    private int size(MyNode<K, V> node) {
-        if (node == null){
-            return 0;
-        } else {
-            return node.length;
-        }
-    }
-
-    public int size() {
-        return size(root);
     }
 
     public V get(K key) {
-    
+        return (V) getNode(key, root);
+    }
+
+    private Node getNode(K key, Node current) {
+
+        if (current == null || current.key.equals(key)) {
+            return current;
+        }
+
+        if (current.key.compareTo(key) >= 0) {
+            return getNode(key, current.left);
+        } else {
+            return getNode(key, current.right);
+        }
+
+    }
+
+    private Node getNodeParent(Node curr, K key, Node parent) {
+        if (curr == null) {
+            return null;
+        }
+
+        if (curr.key.equals(key)) {
+            return parent;
+        }
+
+        if (curr.key.compareTo(key) >= 0) {
+            return getNodeParent(curr.left, key, curr);
+        } else {
+            return getNodeParent(curr.right, key, curr);
+        }
     }
 
     public void delete(K key) {
+        Node z = getNode(key, root);
+        Node p = getNodeParent(root, key, root);
 
+        if (z.left == null) {
+            zReplace(z, z.right, p);
+        } else if (z.right == null) {
+            zReplace(z, z.left, p);
+        } else {
+            Node y = findMin(z.right);
+            Node yParent = findMinParent(y, z.right);
+            if (!yParent.equals(z)) {
+                zReplace(y, y.right, yParent);
+                y.right = z.right;
+            }
+            zReplace(z, y, p);
+            y.left = z.left;
+        }
+    }
+
+    private Node findMin(Node node) {
+        while (node.left != null) {
+            node = node.left;
+        }
+        return node;
+    }
+
+    private Node findMinParent(Node node, Node parent) {
+        while (parent.left != null) {
+
+            if (parent.left.equals(node)) {
+                break;
+            }
+
+            parent = parent.left;
+        }
+        return parent;
+    }
+
+    private void zReplace(Node first, Node firstRight, Node firstParent) {
+        if (firstParent == null) {
+            root = firstRight;
+        } else if (first.equals(firstParent.left)) {
+            firstParent.left = firstRight;
+        } else {
+            firstParent.right = firstRight;
+        }
     }
 
     @Override
     public Iterator<K> iterator() {
-        return null;
+        Queue<K> q = new LinkedList<>();
+        ordered(root, q);
+        return q.iterator();
+    }
+
+    private void ordered(Node x, Queue<K> q) {
+        if (x == null) return;
+        ordered(x.left, q);
+        q.add(x.key);
+        ordered(x.right, q);
     }
 }

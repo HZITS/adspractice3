@@ -1,3 +1,5 @@
+package bstandhashtable;
+
 public class MyHashTable<K, V> {
 
     private HashNode<K, V>[] chainArray;
